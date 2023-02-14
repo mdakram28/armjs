@@ -68,6 +68,6 @@ INST.cmp = class Inst_cmp extends Inst {
             c: Boolean((val1-val2) >> regSize),
             v: Boolean((val1-val2) >> regSize),
         }
-        console.log(val1, val2, vm.state.flags)
+        // console.log(val1, val2, vm.state.flags)
     }
 }

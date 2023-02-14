@@ -1,6 +1,7 @@
 import AsmCode from "./code";
 import { DuplicateLabelError, EndOfCodeError, InvalidRegisterError, LabelNotFoundError } from "./errors";
 import { Inst } from "./inst/inst";
+import { IOStream } from "./iostream";
 import { STD_LIB } from "./libc";
 import { CodeAddr, Library, RamVal, Token } from "./types";
 
@@ -80,12 +81,22 @@ export default class ArmVM {
     codeOffsets: Record<string, number>
     state: VmState
     globalLabels: Record<string, CodeAddr>
+    
+    FD: Record<number, IOStream>
+    nextFDNum: number
 
     constructor() {
         this.codes = {}
         this.codeOffsets = {}
         this.state = new VmState()
         this.globalLabels = {}
+        this.FD = {}
+        this.nextFDNum = 0
+        this.loadLib('libc.ts', STD_LIB)
+        this.loadFD(new IOStream()) // STDIN_FILENO
+        this.loadFD(new IOStream()) // STDOUT_FILENO
+        this.loadFD(new IOStream()) // STDERR_FILENO
+
         this.loadLib('libc.ts', STD_LIB)
     }
 
@@ -168,6 +179,10 @@ export default class ArmVM {
             this.state.ram.push(lib[label])
             codeIndex++
         }
+    }
+
+    loadFD(stream: IOStream) {
+        this.FD[this.nextFDNum++] = stream
     }
 
 }

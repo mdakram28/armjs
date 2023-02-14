@@ -81,6 +81,8 @@ export default class AsmCode {
             if (c === ' ' || c === '\t' || c === ',') {
                 if (!is_string && brackets.length === 0) {
                     tokenEnd()
+                } else {
+                    token.value += c
                 }
             } else if (c === '"') {
                 token.value += c
@@ -125,6 +127,7 @@ export default class AsmCode {
                 for (const token of tokens.slice(1)) {
                     const s = JSON.parse(token.value)
                     if (typeof s !== 'string') throw new InvalidDataError(token)
+                    // console.log(token.value)
                     this.bytes.push(...strToBytes(s))
                 }
             } else if (type.value === '.global') {

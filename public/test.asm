@@ -1,4 +1,4 @@
-fmt:	.string	"Yayyyyyyyy %d asdasd\n"
+fmt:	.string	"Hello World inside the browser! %d \n"
 
 	 .global main
 	.balign 4
@@ -10,11 +10,11 @@ main:
 	mov		x1, 1
 
 loop:	
-	ldr		x0, =fmt2
+	ldr		x0, =fmt
 	bl		printf
 
 	add		x1, x1, 1
-	cmp		x1, 5
+	cmp		x1, 500
 	b.lt	loop
 	
 exit:	mov	x0, 0

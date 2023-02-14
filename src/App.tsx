@@ -1,3 +1,4 @@
+import { Drawer } from 'antd';
 import { useEffect, useState } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import './App.css';
@@ -15,6 +16,8 @@ function App() {
   const [code, setCode] = useState("")
   const [errors, setError] = useState<AsmSyntaxError[]>([])
   const [currentLine, setCurrentLine] = useState<number>()
+  const [termOpen, setTermOpen] = useState(false)
+  const [termContent, setTermContent] = useState("")
 
   useEffect(() => {
     resetVM()
@@ -30,13 +33,19 @@ function App() {
           setError([err as any])
           throw err
         }
-      }, 300);
+      }, 0);
       return () => clearInterval(timerId);
     }
   }, [isRunning, vm]);
 
+  function onStdout([b]: number[]) {
+    // console.log("received byte on stdout: ", b)
+    setTermContent(content  => content + String.fromCharCode(b))
+  }
+
   function resetVM() {
     console.clear()
+    setTermContent('')
     setIsRunning(false)
     setDummy(0)
     fetch("/test.asm").then(res => res.text()).then(test1Code => {
@@ -48,6 +57,7 @@ function App() {
         try {
           vm.load('test.asm', test1Code)
           vm.load('test2.asm', test2Code)
+          vm.FD[1].read(Infinity, 1, onStdout)
           vm.gotoMain()
         } catch (err) {
           setError([err as any])
@@ -68,6 +78,9 @@ function App() {
   }
 
   function toggleRunning() {
+    if(!isRunning) {
+      setTermOpen(true)
+    }
     setIsRunning(!isRunning)
   }
 
@@ -84,6 +97,9 @@ function App() {
           <button onClick={runLine} style={{ 'fontSize': 25 }}>Execute one Instruction</button>
           <br />
           <button onClick={toggleRunning} style={{ 'fontSize': 25 }}>{isRunning ? 'Stop' : 'Start'}</button>
+          <br/>
+          <button onClick={() => setTermOpen(true)} style={{ 'fontSize': 25 }}>Open Terminal</button>
+
           {vm &&
             <>
               <VmStateComponent vmState={vm.state} dummy={dummy}></VmStateComponent>
@@ -91,6 +107,11 @@ function App() {
           }
         </Panel>
       </PanelGroup>
+
+      <Drawer title="Standard Input/Output" placement="bottom" onClose={() => setTermOpen(false)} open={termOpen}>
+        Terminal:
+        <pre>{termContent}</pre>
+      </Drawer>
 
     </div>
   );

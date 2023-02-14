@@ -19,7 +19,7 @@ export const EditorComponent = (props: { text: string, errors: AsmSyntaxError[],
                 }
             ]
         );
-        console.log("Coloring line", ids)
+        // console.log("Coloring line", ids)
         return () => editor.deltaDecorations(ids, []);
     }, [editor, monaco, currentLine])
 
@@ -50,7 +50,7 @@ export const EditorComponent = (props: { text: string, errors: AsmSyntaxError[],
             })
         }
         monaco.editor.setModelMarkers(model, "owner", markers);
-        console.log("model", editor.getModel())
+        // console.log("model", editor.getModel())
     }, [editor, monaco, errors])
 
     return <div className="asm-editor">
