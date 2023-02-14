@@ -1,9 +1,12 @@
+import ArmVM from "./armvm"
+import { Inst } from "./inst/inst"
 
 export type CodeAddr = {
-    n: string,
-    i: number,
-    r: number,
-    c: number,
+    codeName: string,
+    textIndex: number,
+    row: number,
+    col: number,
+    codeIndex?: number
 }
 
 export type Token = {
@@ -18,3 +21,8 @@ export type Macro = {
 }
 
 export type InstArg = string | number
+
+export type LibFunc = (vm: ArmVM) => void
+export type Library = Record<string, LibFunc | number>
+
+export type RamVal = number | Inst | null | LibFunc

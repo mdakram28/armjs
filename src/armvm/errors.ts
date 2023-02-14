@@ -1,77 +1,90 @@
 import { CodeAddr, Token } from "./types"
 import { addrToString } from "./util"
 
-class SyntaxError extends Error { }
-class RuntimeError extends Error { }
+export class AsmSyntaxError extends Error {
+    token: Token
+    constructor(msg: string, token: Token) {
+        super(msg + `: "${token.value}" on "${addrToString(token.addr)}"`)
+        this.token = token
+    }
+}
+export class AsmRuntimeError extends Error { }
 
-export class BracketMismatchError extends SyntaxError {
-    constructor(msg?: string) {
-        super(msg)
+export class BracketMismatchError extends AsmSyntaxError {
+    constructor(token: Token) {
+        super(`Bracket mismatch`, token)
         this.name = "BracketMismatchError"
     }
 }
 
-export class BracketUnclosedError extends SyntaxError {
-    constructor(msg?: string) {
-        super(msg)
+export class BracketUnclosedError extends AsmSyntaxError {
+    constructor(token: Token) {
+        super(`Bracket is not closed`, token)
         this.name = "BracketUnclosedError"
     }
 }
 
-export class WrongNumberOfArgs extends SyntaxError {
-    constructor(msg?: string) {
-        super(msg)
+export class WrongNumberOfArgs extends AsmSyntaxError {
+    constructor(msg: string, token: Token) {
+        super(msg, token)
         this.name = "WrongNumberOfArgs"
     }
 }
 
 
-export class InvalidRegisterError extends SyntaxError {
-    constructor(name: string, token?: Token) {
-        super(`Unknown register: "${name}" on ${addrToString(token?.addr)}`)
+export class InvalidRegisterError extends AsmSyntaxError {
+    constructor(token: Token) {
+        super(`Unknown register`, token)
         this.name = "InvalidRegisterError"
     }
 }
 
-export class LabelNotFoundError extends SyntaxError {
-    constructor(label: string, token?: Token) {
-        super(`Label not found: "${label}" on ${addrToString(token?.addr)} `)
+export class LabelNotFoundError extends AsmSyntaxError {
+    constructor(token: Token) {
+        super(`Label not found`, token)
         this.name = "LabelNotFoundError"
     }
 }
 
-export class UnknownInstructionError extends SyntaxError {
+export class DuplicateLabelError extends AsmSyntaxError {
+    constructor(code1Name: string, token: Token) {
+        super(`Duplicate global. First defined in ${code1Name}`, token)
+        this.name = "DuplicateLabelError"
+    }
+}
+
+export class UnknownInstructionError extends AsmSyntaxError {
     constructor(token: Token) {
-        super(`Unknown Instruction "${token.value}" on ${addrToString(token.addr)}`)
+        super(`Unknown Instruction`, token)
         this.name = "UnknownInstructionError"
     }
 }
 
 
-export class InvalidDataError extends SyntaxError {
+export class InvalidDataError extends AsmSyntaxError {
     constructor(token: Token) {
-        super(`Invalid Data "${token.value}" on ${addrToString(token.addr)}`)
+        super(`Invalid Data`, token)
         this.name = "InvalidDataError"
     }
 }
 
 
 
-export class EndOfCodeError extends RuntimeError {
+export class EndOfCodeError extends AsmRuntimeError {
     constructor(msg?: string) {
         super(msg)
         this.name = "EndOfCodeError"
     }
 }
 
-export class BadReadError extends RuntimeError {
+export class BadReadError extends AsmRuntimeError {
     constructor(val: any, addr?: CodeAddr) {
         super(`Tried to read ${val} from ${addrToString(addr)}`)
         this.name = "BadReadError"
     }
 }
 
-export class BadJumpError extends RuntimeError {
+export class BadJumpError extends AsmRuntimeError {
     constructor(label: string, token?: Token) {
         super(`Cannot jump to ${label} at ${addrToString(token?.addr)}`)
         this.name = "BadJumpError"

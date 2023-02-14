@@ -1,0 +1,8 @@
+.asm-editor {
+    border: 2px solid red;
+}
+
+.base.case.rofl, .line-current {
+    color: orangered;
+    background-color: cadetblue;
+}

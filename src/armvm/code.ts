@@ -1,44 +1,49 @@
-import { BadReadError, InvalidDataError } from "./errors"
-import { Inst, parseInst } from "./inst"
+import { AsmSyntaxError, BadReadError, InvalidDataError, LabelNotFoundError } from "./errors"
+import "./inst"
+import { parseInst } from "./inst/inst"
 import { getMacros } from "./m4"
-import { CodeAddr, Macro, Token } from "./types"
+import { CodeAddr, Macro, RamVal, Token } from "./types"
 import { strToBytes } from "./util"
 
 export default class AsmCode {
     name: string
     text: string
     lines: string[]
-    inst: (Inst | null)[]
+    // private inst: (Inst | null)[]
     labels: Record<string, CodeAddr>
     macros: Record<string, Macro>
+
+    bytes: RamVal[]
+    // byteLabels: Record<string, number>
+    // byteLines: number[]
     
-    bytes: (number | null)[]
-    byteLabels: Record<string, number>
-    byteLines: number[]
+    globalTokens: Record<string, Token>
 
     constructor(name: string, text: string) {
         this.name = name
         this.text = text
         this.lines = []
-        this.inst = []
+        // this.inst = []
         this.labels = {}
         this.macros = {}
         this.bytes = []
-        this.byteLabels = {}
-        this.byteLines = []
+        // this.byteLabels = {}
+        // this.byteLines = []
+
+        this.globalTokens = {}
         // console.log(this.lines.join("\n"))
     }
 
     readBytes(startIndex: number, numBytes: number): number[] {
-        if ((startIndex + numBytes) > this.bytes.length) throw new BadReadError('EOF', {n: this.name, r: this.lines.length+1, c: 0, i: 0})
-        const ret = this.bytes.slice(startIndex, startIndex+numBytes)
-        if (ret.indexOf(null) >= 0) throw new BadReadError(null, {n: this.name, r: 0, c: 0, i: 0})
+        if ((startIndex + numBytes) > this.bytes.length) throw new BadReadError('EOF', { codeName: this.name, row: this.lines.length + 1, col: 0, textIndex: 0 })
+        const ret = this.bytes.slice(startIndex, startIndex + numBytes)
+        if (ret.indexOf(null) >= 0) throw new BadReadError(null, { codeName: this.name, row: 0, col: 0, textIndex: 0 })
         return ret as number[]
     }
 
 
     toAddr(i: number): CodeAddr {
-        if (i >= this.text.length) return { n: this.name, i, r: 1, c: 1 }
+        if (i >= this.text.length) return { codeName: this.name, textIndex: i, row: 1, col: 1 }
         let row = 1
         let sum = 0
         let col = 0
@@ -52,23 +57,23 @@ export default class AsmCode {
             }
             row++
         }
-        return { n: this.name, i, r: row, c: col }
+        return { codeName: this.name, textIndex: i, row: row, col: col }
     }
 
-    compileLine(line: string, row: number): Inst | null {
+    compileLine(line: string, row: number): void {
         const tokens: Token[] = []
         const lasti = line.length
-        let token: Token = { value: "", addr: { n: this.name, i: 0, c: 1, r: row } }
+        let token: Token = { value: "", addr: { codeName: this.name, textIndex: 0, col: 1, row: row } }
         let is_string = false
         let brackets = []
         let col = 0
 
         const tokenEnd = () => {
             if (token.value.length > 0) {
-                token.addr.c = col
-                token.addr.i = 0
+                token.addr.col = col + 1 - token.value.length
+                token.addr.textIndex = 0
                 tokens.push(token)
-                token = { value: "", addr: { n: this.name, i: 0, c: 1, r: row } }
+                token = { value: "", addr: { codeName: this.name, textIndex: 0, col: 1, row: row } }
             }
         }
         for (; col < lasti; col++) {
@@ -102,19 +107,19 @@ export default class AsmCode {
 
         tokenEnd()
 
-        this.byteLines[row-1] = this.bytes.length
+        // this.byteLines[row-1] = this.bytes.length
 
         let type = tokens[0]
-        if (!type) return null
+        if (!type) return
         else if (type.value[type.value.length - 1] === ':') {
             const label = type.value.substring(0, type.value.length - 1)
-            this.byteLabels[label] = this.bytes.length
-            this.labels[label] = type.addr
+            // this.byteLabels[label] = this.bytes.length
+            this.labels[label] = { ...type.addr, codeIndex: this.bytes.length }
             tokens.shift()
         }
 
         type = tokens[0]
-        if (!type) return null
+        if (!type) return
         else if (type.value[0] === '.') {
             if (type.value === '.string') {
                 for (const token of tokens.slice(1)) {
@@ -122,11 +127,18 @@ export default class AsmCode {
                     if (typeof s !== 'string') throw new InvalidDataError(token)
                     this.bytes.push(...strToBytes(s))
                 }
+            } else if (type.value === '.global') {
+                this.globalTokens[tokens[1].value] = tokens[1]
+            } else if (type.value === '.balign') {
+                const num = parseInt(tokens[1].value)
+                if ((Math.log(num)/Math.log(2)) % 1 !== 0) throw new AsmSyntaxError(`num_bytes should be power of 2`, tokens[1])
+                while(this.bytes.length % num > 0) {
+                    this.bytes.push(0)
+                }
             }
-            return null
         } else {
-            this.bytes.push(null, null, null, null)
-            return parseInst(tokens)
+            const inst = parseInst(tokens, this.bytes.length)
+            this.bytes.push(inst, null, null, null)
         }
     }
 
@@ -134,10 +146,17 @@ export default class AsmCode {
         this.lines = this.text.split('\n')
         this.macros = getMacros(this)
         this.bytes = []
-        this.byteLines = this.lines.map(() => 0)
-        this.inst = this.lines
+        // this.byteLines = this.lines.map(() => 0)
+        this.lines
             .map(l => l.split("//")[0].trimEnd())
             .map((line, i) => this.compileLine(line, i + 1))
+
+        // Check global labels are present
+        for (const label in this.globalTokens) {
+            const addr = this.labels[label]
+            if (!addr) throw new LabelNotFoundError(this.globalTokens[label])
+            // this.globalLabels[label] = addr
+        }
 
         // console.log(this.bytes)
         // const m = this.macros['read_r']

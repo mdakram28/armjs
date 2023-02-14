@@ -31,7 +31,7 @@ export function getMacros(code: AsmCode): Record<string, Macro> {
                     break
                 case ')':
                     if (!is_string) {
-                        if (stack.pop() !== '(') throw new BracketMismatchError()
+                        if (stack.pop() !== '(') throw new BracketMismatchError({value: arg, addr: code.toAddr(i)})
                     }
                     break
                 case '`':
@@ -50,7 +50,7 @@ export function getMacros(code: AsmCode): Record<string, Macro> {
             }
             i++
         }
-        if (stack.length > 0) throw new BracketUnclosedError()
+        if (stack.length > 0) throw new BracketUnclosedError({value: stack[0], addr: code.toAddr(i)})
 
         args.push(arg.substring(0, arg.length-1))
         args = args
@@ -67,7 +67,9 @@ export function getMacros(code: AsmCode): Record<string, Macro> {
                 // console.log(result)
                 const [args, defEnd] = extract(result.index + result[0].length)
                 if (macroDef.type === 'define') {
-                    if (args.length !== 2) throw new WrongNumberOfArgs()
+                    if (args.length !== 2) throw new WrongNumberOfArgs(
+                        `Define requires 2 arguments, ${args.length} provided`,
+                        {value: ')', addr: code.toAddr(defEnd)})
                     macros[args[0]] = {
                         "replace": args[1],
                         defStart: code.toAddr(result.index + result[0].length - macroDef.type.length - 1),

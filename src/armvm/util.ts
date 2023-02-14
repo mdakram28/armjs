@@ -1,5 +1,8 @@
 import { CodeAddr } from "./types";
 
+export const Bits64 = 0xFFFFFFFFFFFFFFFF
+export const Bits32 = 0xFFFFFFFF
+
 export function inverseObject(obj: Record<string, string>) {
     const retobj: Record<string, string> = {};
     for (const key in obj) {
@@ -9,7 +12,7 @@ export function inverseObject(obj: Record<string, string>) {
 }
 
 export function addrToString(addr?: CodeAddr) {
-    return `${addr?.n}:${addr?.r}:${addr?.c}`
+    return `${addr?.codeName}:${addr?.row}:${addr?.col}`
 }
 
 export function strToBytes(str: string): number[] {
