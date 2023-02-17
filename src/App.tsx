@@ -27,10 +27,13 @@ function App() {
     if (isRunning) {
       const timerId = setInterval(() => {
         try {
-          runLine()
+          for(let i=0; i<1000000; i++) {
+            runLine()
+          }
         } catch (err) {
           clearInterval(timerId)
           setError([err as any])
+          setIsRunning(false)
           throw err
         }
       }, 0);

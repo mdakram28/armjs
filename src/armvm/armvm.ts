@@ -3,6 +3,8 @@ import { DuplicateLabelError, EndOfCodeError, InvalidRegisterError, LabelNotFoun
 import { Inst } from "./inst/inst";
 import { IOStream } from "./iostream";
 import { STD_LIB } from "./libc";
+import Sample from "./sample.js";
+import * as SampleWASM from "./sample.wasm";
 import { CodeAddr, Library, RamVal, Token } from "./types";
 
 export class VmState {
@@ -53,7 +55,7 @@ export class VmState {
             const regNum = parseInt(name.substring(1))
             if (isNaN(regNum) || regNum < 0 || regNum > 30) throw new InvalidRegisterError(token)
             this.gpr[regNum] = val
-            console.log(`Updated value of GPR: ${name} -> ${val}`)
+            // console.log(`Updated value of GPR: ${name} -> ${val}`)
         } else if (name in this.spr) {
             (this.spr as any)[name] = val
         } else {
@@ -81,9 +83,11 @@ export default class ArmVM {
     codeOffsets: Record<string, number>
     state: VmState
     globalLabels: Record<string, CodeAddr>
-    
+
     FD: Record<number, IOStream>
     nextFDNum: number
+
+    // cppModule: 
 
     constructor() {
         this.codes = {}
@@ -96,8 +100,14 @@ export default class ArmVM {
         this.loadFD(new IOStream()) // STDIN_FILENO
         this.loadFD(new IOStream()) // STDOUT_FILENO
         this.loadFD(new IOStream()) // STDERR_FILENO
-
-        this.loadLib('libc.ts', STD_LIB)
+        const lib = Sample({
+            locateFile: () => {
+                return SampleWASM;
+            }
+        })
+        lib.then((core: any) => {
+            console.log(core)
+        })
     }
 
     gotoMain() {
@@ -179,6 +189,10 @@ export default class ArmVM {
             this.state.ram.push(lib[label])
             codeIndex++
         }
+    }
+
+    loadWasmLib(lib: any) {
+
     }
 
     loadFD(stream: IOStream) {

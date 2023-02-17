@@ -4,7 +4,7 @@ fmt:	.string	"Hello World inside the browser! %d \n"
 	.balign 4
 main:	
 	// stp	x29, x30, [sp, -16]!
-	// mov	x29, sp
+	mov	x29, sp
 	
 	// Body of main function
 	mov		x1, 1
@@ -14,7 +14,7 @@ loop:
 	bl		printf
 
 	add		x1, x1, 1
-	cmp		x1, 500
+	cmp		x1, 10
 	b.lt	loop
 	
 exit:	mov	x0, 0
