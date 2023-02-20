@@ -1,0 +1,22 @@
+{
+  "name": "cli",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "mdakram28",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^18.14.0",
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "armvm": "file:../armvm",
+    "armvm-wasm": "file:../armvm-wasm/pkg",
+    "endian-reader": "^0.3.0",
+    "nodemon": "^2.0.20"
+  },
+  "scripts": {
+    "watch": "nodemon -e ts,js,asm -w ./src -w ../armvm/dist/index.js -w ./test -x \"npm start ./test/test.asm\"",
+    "start": "npm run build && node ./build/main.js",
+    "build": "tsc"
+  }
+}

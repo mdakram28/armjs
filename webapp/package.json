@@ -1,0 +1,56 @@
+{
+  "name": "armweb",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@craco/craco": "^7.0.0",
+    "@monaco-editor/react": "^4.4.6",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@types/jest": "^27.5.2",
+    "@types/node": "^16.18.12",
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.10",
+    "antd": "^5.2.1",
+    "armvm": "file:../armvm",
+    "armvm-wasm": "file:armvm-wasm/pkg",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-resizable-panels": "^0.0.36",
+    "react-scripts": "5.0.1",
+    "typescript": "^4.9.5",
+    "wasm-loader": "^1.3.0",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "build:wasm": "cd armvm-wasm && wasm-pack build --target web --out-dir pkg",
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
+    "eject": "react-scripts eject",
+    "vm": "node ./src/cli/index.js"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "file-loader": "^6.2.0",
+    "react-app-rewired": "^2.2.1"
+  }
+}
