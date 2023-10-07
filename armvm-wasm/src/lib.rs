@@ -1,9 +1,9 @@
 use crate::insts::{
     inst_data_proc::{ArmInstLogicalShifted, ArmInstMov,ArmInstAddSub, ArmInstPcRel},
+    inst_branch::ArmInstBranch,
     inst_load_store::ArmInstLoadStore,
     ArmInst, ArmInstNop,
 };
-use std::primitive;
 use crate::util::*;
 use core::panic;
 use std::collections::HashMap;
@@ -118,6 +118,7 @@ impl ArmV8State {
 pub struct ArmV8Core {
     state: ArmV8State,
     insts: Vec<Box<dyn ArmInst>>,
+    inst_codes: Vec<u32>,
 }
 
 #[wasm_bindgen]
@@ -126,6 +127,7 @@ impl ArmV8Core {
         ArmV8Core {
             state: ArmV8State::new(),
             insts: Vec::new(),
+            inst_codes: Vec::new()
         }
     }
 
@@ -137,8 +139,13 @@ impl ArmV8Core {
             // logfmt!("+ Running inst: {inst_i}/{len}");
             let inst_b = &mut self.insts[(self.state.spr_pc / 4) as usize];
             inst_b.as_mut().run(&mut self.state);
-            self.state.increment_PC();
             count += 1;
+
+            // Do not increment if branched
+            if self.inst_codes[(self.state.spr_pc / 4) as usize] >> 26 & 0b11111 != 0b00101 {
+                self.state.increment_PC();
+            }
+
             if self.state.spr_pc > len * 4 {
                 self.state.spr_pc = 0;
             }
@@ -149,10 +156,11 @@ impl ArmV8Core {
         self.state.ram_load(buffer.to_vec(), offset as usize);
     }
 
-    pub fn inst_load(&mut self, inst: u32) {
+    pub fn inst_load(&mut self, opcode: u32) {
         log("---------------------------------------- Loading");
-        let inst = self.inst_top_level(inst);
+        let inst = self.inst_top_level(opcode);
         self.insts.push(inst);
+        self.inst_codes.push(opcode);
         log("---------------------------------------- Loaded");
     }
 
@@ -188,8 +196,7 @@ impl ArmV8Core {
 
     fn inst_data_processing_immediate(&mut self, inst: u32) -> Box<dyn ArmInst> {
         log("Data Processing -- Immediate");
-        let op0 = (inst >> 23) & 0b111;
-        // log(format!("op0={op0:03b}").as_str());
+        bit_vars!(inst, op0=[25, 3]);
         match op0 {
             0b000 => return ArmInstPcRel::new(inst),
             0b001 => TODO_INST("PC-rel. addressing"),
@@ -258,11 +265,11 @@ impl ArmV8Core {
 
         log(format!("op0={op0:03b}, op1={op1:014b}, op2={op2:05b}, ").as_str());
         match op0 {
-            0b000 => TODO_INST("Unconditional branch (immediate)"),
+            0b000 => return ArmInstBranch::new(inst),
             0b001 => TODO_INST("Compare and branch (immediate)"),
             0b010 => TODO_INST("Conditional branch (immediate)"),
             0b011 => TODO_INST("UNKNOWN"),
-            0b100 => TODO_INST("Unconditional branch (immediate)"),
+            0b100 => return ArmInstBranch::new(inst),
             0b101 => TODO_INST("Compare and branch (immediate)"),
             0b110 => {
                 if op1 == 0b01000000110010 {
@@ -279,6 +286,7 @@ impl ArmV8Core {
     }
 
     fn inst_load_store(&mut self, inst: u32) -> Box<dyn ArmInst> {
+        logfmt!("Instruction - Load Store");
         bit_vars!(
             inst,
             op0 = [31, 4],

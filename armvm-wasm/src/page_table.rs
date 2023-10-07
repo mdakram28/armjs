@@ -58,6 +58,17 @@ impl PageTable {
             table: Vec::with_capacity(PAGE_TABLE_SIZE),
         }
     }
+
+    pub fn read_u64(&self, mut addr: usize) -> u64 {
+        let mut shift: u64 = 0;
+        let mut val: u64 = 0;
+        while shift < 64 {
+            val |= (self[addr] as u64) << shift;
+            shift += 8;
+            addr += 1;
+        }
+        return val;
+    }
 }
 
 impl ops::Index<usize> for PageTable {

@@ -1,6 +1,6 @@
 use super::ArmInst;
 use crate::{
-    bit_vars, bitmask, sign_type, set_gpr_sp, get_gpr_sp, logfmt,
+    bit_vars, bitmask, get_gpr_sp, logfmt, set_gpr_sp, sign_type,
     util::{log, TODO_INST},
     util_bits::sign_extend64,
     ArmV8State,
@@ -37,7 +37,6 @@ impl ArmInstLoadStore {
         bit_vars!(inst, imm12 = [21, 12]);
 
         let imm12Shifted = imm12 << size;
-        
 
         macro_rules! INST_STR {
             ($t: ty, $b: literal) => {{
@@ -53,7 +52,11 @@ impl ArmInstLoadStore {
                 Box::new(ArmInstLoadStore {
                     inner_run: Box::new(move |state: &mut ArmV8State| {
                         let mut addr = (get_gpr_sp!(state, Rn) as i64 + $addrOffset) as usize;
-                        set_gpr_sp!(state, Rn, (addr as sign_type!($t) + $regOffset) as $t as u64);
+                        set_gpr_sp!(
+                            state,
+                            Rn,
+                            (addr as sign_type!($t) + $regOffset) as $t as u64
+                        );
                         let mut val = state.gpr[Rt as usize];
                         state.ram[addr - state.ram_offset] = val as u8;
                         for _ in 1..$b {
@@ -79,17 +82,18 @@ impl ArmInstLoadStore {
             ($t: ty, $b: literal, $addrOffset: expr, $regOffset: expr) => {
                 Box::new(ArmInstLoadStore {
                     inner_run: Box::new(move |state: &mut ArmV8State| {
-                        let mut addr = (get_gpr_sp!(state, Rn) as i64 + $addrOffset) as usize;
-                        set_gpr_sp!(state, Rn, (addr as sign_type!($t) + $regOffset) as $t as u64);
+                        let addr = (get_gpr_sp!(state, Rn) as i64 + $addrOffset) as usize;
+                        set_gpr_sp!(
+                            state,
+                            Rn,
+                            (addr as sign_type!($t) + $regOffset) as $t as u64
+                        );
                         logfmt!("addr={addr}, offset={}", $addrOffset);
-                        let mut val = state.ram[addr - state.ram_offset] as u64;
-                        for _ in 1..$b {
-                            val <<= 8;
-                            addr += 1;
-                            val |= state.ram[addr - state.ram_offset] as u64;
-                        }
-                        // logfmt!("val={val:064b}");
-                        state.gpr[Rt as usize] = val as $t as u64;
+                        state.gpr[Rt as usize] = state.ram.read_u64(addr) as $t as u64;
+                        logfmt!(
+                            "Loaded val={:#018x} from ram into x{Rt}",
+                            state.ram.read_u64(addr) as $t as u64
+                        );
                     }),
                 })
             };

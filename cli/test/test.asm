@@ -14,7 +14,7 @@ loop:
 	bl		printf
 
 	add		x1, x1, 1
-	cmp		x1, 100000
+	cmp		x1, 10
 	b.lt	loop
 	
 exit:	mov	x0, 0

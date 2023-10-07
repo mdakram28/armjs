@@ -1,6 +1,7 @@
 use crate::ArmV8State;
 pub mod inst_data_proc;
 pub mod inst_load_store;
+pub mod inst_branch;
 
 pub trait ArmInst {
     // fn load(&mut self, inst: u32, state: &ArmV8State);

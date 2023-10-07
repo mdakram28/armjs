@@ -52,7 +52,7 @@ pub fn sign_extend32(data: u32, size: u32) -> i32 {
 
 pub fn sign_extend64(data: u32, size: u32) -> i64 {
     // assert!(size > 0 && size <= 32);
-    ((data << (64 - size)) as i64) >> (64 - size)
+    (((data as u64) << (64 - size)) as i64) >> (64 - size)
 }
 
 /*

@@ -1,4 +1,3 @@
-import { ArmV8Core } from 'armvm-wasm';
 import * as fs from 'fs';
 import * as process from 'process';
 
@@ -84,31 +83,25 @@ fs.open(sourceFilePath, 'r', (status, fd) => {
         const parsed = new elfyParser().execute(buffer)
         const sections = parsed.body.sections
         const textSection = sections.filter((s: any) => s.name === '.text')[0]
+        const gotSection = sections.filter((s: any) => s.name === '.got')[0]
         if (!textSection) throw Error(".text section not found in binary")
         const insts: Buffer = textSection.data
-        console.log(textSection)
+        console.log(sections)
         // return;
-        
-        const vm = ArmV8Core.new()
-        vm.ram_load(new Float64Array(buffer), 0n);
-        // console.log(insts.readUInt32LE(0).toString(16))
-        // console.log(insts.readUInt32LE(4).toString(16))
-        // console.log(insts.readUInt32LE(8).toString(16))
-        // console.log(insts.readUInt32LE(12).toString(16))
-        // console.log(insts.readUInt32LE(16).toString(16))
-        vm.inst_load(insts.readUInt32LE(0));
-        vm.inst_load(insts.readUInt32LE(4));
-        vm.inst_load(insts.readUInt32LE(8));
-        vm.inst_load(insts.readUInt32LE(12));
-        vm.inst_load(insts.readUInt32LE(16));
-        vm.inst_load(insts.readUInt32LE(20));
-        vm.inst_load(insts.readUInt32LE(24));
-        vm.inst_load(insts.readUInt32LE(28));
-        vm.inst_load(insts.readUInt32LE(32));
-        
-        console.log("Total time to run : ", timeIt(() => {
-            vm.inst_run(9);
-        }))
-        
+
+        // const vm = ArmV8Core.new()
+        // vm.ram_load(new Float64Array(insts), 0n);
+        // vm.ram_load(new Float64Array(gotSection.data), BigInt(gotSection.addr));
+
+        // const numInst = 12;
+        // for (let i = 0; i < numInst; i++) {
+        //     vm.inst_load(insts.readUInt32LE(i * 4));
+        // }
+
+        // console.log("Total time to run : ", timeIt(() => {
+        //     vm.inst_run(numInst);
+        // }))
+        // console.log("-----------------RESULT")
+        // console.log(vm.get_state().gpr, vm.get_state().spr);
     });
 })

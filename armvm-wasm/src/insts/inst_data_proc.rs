@@ -50,16 +50,17 @@ impl ArmInst for ArmInstPcRel {
 impl ArmInstMov {
     pub fn new(inst: u32) -> Box<ArmInstMov> {
         log(format!("Move wide (immediate)").as_str());
-        let sf = (inst >> 31) == 1;
-        let opc = (inst >> 29) & 0b11;
-        let hw = (inst >> 21) & 0b11;
-        let imm16 = (inst >> 5) & 0xFF;
-        let Rd = (inst & 0b11111) as usize;
-        log(format!("opc={opc:02b}, hw={hw:02b}, Rd={Rd}, imm16={imm16}").as_str());
+        // let sf = (inst >> 31) == 1;
+        // let opc = (inst >> 29) & 0b11;
+        // let hw = (inst >> 21) & 0b11;
+        // let imm16 = (inst >> 5) & 0xFF;
+        // let Rd = (inst & 0b11111) as usize;
+        bit_vars!(inst, sf=[31, 1], opc=[30, 2], hw=[22, 2], imm16=[20, 16], Rd=[4, 5]);
+        // log(format!("opc={opc:02b}, hw={hw:02b}, Rd={Rd}, imm16={imm16}").as_str());
 
         if opc == 1 {
             log("UNALLOCATED");
-        } else if sf {
+        } else if sf == 0 {
             if hw >= 2 {
                 log("UNALLOCATED");
             } else {
@@ -67,7 +68,7 @@ impl ArmInstMov {
                 log(format!("mov    w{Rd}, {imm16:#04x}").as_str());
                 return Box::new(ArmInstMov {
                     inner_run: Box::new(move |state: &mut ArmV8State| {
-                        state.gpr[Rd] = imm16 as u64;
+                        state.gpr[Rd as usize] = imm16 as u64;
                     }),
                 });
             }
@@ -76,7 +77,7 @@ impl ArmInstMov {
             log(format!("mov    x{Rd}, {imm16:#04x}").as_str());
             return Box::new(ArmInstMov {
                 inner_run: Box::new(move |state: &mut ArmV8State| {
-                    state.gpr[Rd] = imm16 as u64;
+                    state.gpr[Rd as usize] = imm16 as u64;
                 }),
             });
         }
